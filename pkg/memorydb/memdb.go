@@ -38,12 +38,36 @@ func updateIDField[T any](in T, id uint64) (T, error) {
 	return in, nil
 }
 
-// Compare is the signature for the compare function
-// performed on binary searches.
-type Compare[T any] func(T, T) int
+// Compare is the signature for the compare function applied on
+// searches. First argument is current element in loop, second
+// is compare compare element.
+type Compare[T any] func(T, T) bool
+
+// existsFunc searches whether any element in iter.Seq matches el
+// when compared using cmp.
+func existsFunc[T any](it iter.Seq[T], el T, cmp Compare[T]) bool {
+	for v := range it {
+		if cmp(v, el) {
+			return true
+		}
+	}
+
+	return false
+}
 
 // Filter is the signature for the filter function applied to element list.
 type Filter[T any] func(T) bool
+
+// filterFunc filters iter.Seq via f.
+func filterFunc[T any](it iter.Seq[T], f Filter[T]) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for v := range it {
+			if f(v) && !yield(v) {
+				return
+			}
+		}
+	}
+}
 
 // A MemoryDB is a concurrent safe very minimal in memory db.
 // It needs the object to be stored to have an ID field of type int,
@@ -62,7 +86,7 @@ type MemoryDB[T any] interface {
 	FindFilterFunc(context.Context, Filter[T]) ([]T, error)
 	FindByID(context.Context, uint64) (T, error)
 	Create(context.Context, T, Compare[T]) (T, error)
-	Update(context.Context, uint64, T, Compare[T]) (T, error)
+	Update(_ context.Context, id uint64, in T, fnd Compare[T]) (T, error)
 	Delete(context.Context, uint64) (T, error)
 }
 
@@ -76,7 +100,7 @@ type memDB[T any] struct {
 // New returns a MemoryDB.
 func New[T any]() MemoryDB[T] {
 	db := &memDB[T]{
-		m: make(map[uint64]T),
+		m: make(map[uint64]T, 100),
 	}
 	db.index.Add(1)
 
@@ -84,6 +108,7 @@ func New[T any]() MemoryDB[T] {
 }
 
 // FindAll returns a slice of all element in internal map.
+// Order is not guarenteed.
 func (db *memDB[T]) FindAll(_ context.Context) ([]T, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -93,21 +118,12 @@ func (db *memDB[T]) FindAll(_ context.Context) ([]T, error) {
 
 // FindFilterFunc returns a slice of filtered element in internal map.
 // It takes in a closure to let caller define how results should be filtered.
+// Order is not guarenteed.
 func (db *memDB[T]) FindFilterFunc(_ context.Context, fltr Filter[T]) ([]T, error) {
-	filter := func(in iter.Seq[T]) iter.Seq[T] {
-		return func(yield func(T) bool) {
-			for v := range in {
-				if fltr(v) && !yield(v) {
-					return
-				}
-			}
-		}
-	}
-
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	return slices.Collect(filter(maps.Values(db.m))), nil
+	return slices.Collect(filterFunc(maps.Values(db.m), fltr)), nil
 }
 
 // FindByID returns the element at id index.
@@ -117,34 +133,30 @@ func (db *memDB[T]) FindByID(_ context.Context, id uint64) (T, error) {
 	defer db.mu.Unlock()
 
 	v, ok := db.m[id]
-	if ok {
-		return v, nil
+	if !ok {
+		return v, errNotFound
 	}
 
-	return v, errNotFound
+	return v, nil
 }
 
-// Create inserts in in the map. It performs a binary search ordered
-// by cmp to make sure all elements in db are unique. It returns an
-// error if duplicate element was found or if it could not update ID
-// field in element (see [MemoryDB] for more info on element restrictions).
-// It returns the created element.
+// Create inserts in in the map. It performs a search based on cmp
+// to let caller decide how uniqueness works for T. It returns an
+// error if duplicate element was found or if it could not update
+// ID field in element (see [MemoryDB] for more info on element
+// restrictions). It returns the created element.
 func (db *memDB[T]) Create(_ context.Context, in T, cmp Compare[T]) (T, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	if _, ok := slices.BinarySearchFunc(
-		slices.SortedFunc(maps.Values(db.m), cmp),
-		in,
-		cmp,
-	); ok {
-		return in, errAlreadyExists
-	}
-
 	idx := db.index.Load()
+	// Update ID before search to let caller use ID as valid field.
 	out, err := updateIDField(in, idx)
 	if err != nil {
 		return in, err
+	}
+	if existsFunc(maps.Values(db.m), out, cmp) {
+		return in, errAlreadyExists
 	}
 
 	db.m[idx] = out
@@ -152,30 +164,28 @@ func (db *memDB[T]) Create(_ context.Context, in T, cmp Compare[T]) (T, error) {
 	return out, nil
 }
 
-// Update updates in at id index. It performs a binary search ordered
-// by cmp to make sure all elements in db are unique. It returns an
-// error if duplicate element was found or if it could not update ID
-// field in element (see [MemoryDB] for more info on element restrictions).
-// It returns the updated element.
+// Update updates in at id index. It updates the element in place,
+// not updating each individual field, so the full updated object
+// should be passed (ID is ignored). It performs a search based on
+// cmp to let caller decide how uniqueness works for T. It returns
+// an error if duplicate element was found or if it could not update
+// ID field in element (see [MemoryDB] for more info on element
+// restrictions). It returns the updated element.
 func (db *memDB[T]) Update(_ context.Context, id uint64, in T, cmp Compare[T]) (T, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	if _, ok := slices.BinarySearchFunc(
-		slices.SortedFunc(maps.Values(db.m), cmp),
-		in,
-		cmp,
-	); ok {
+	// Update ID before search to let caller use ID as valid field.
+	out, err := updateIDField(in, id)
+	if err != nil {
+		return in, err
+	}
+	if existsFunc(maps.Values(db.m), out, cmp) {
 		return in, errAlreadyExists
 	}
 
 	if v, ok := db.m[id]; !ok {
 		return v, errNotFound
-	}
-
-	out, err := updateIDField(in, id)
-	if err != nil {
-		return in, err
 	}
 
 	db.m[id] = out
