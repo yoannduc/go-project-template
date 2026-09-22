@@ -1,40 +1,66 @@
 package env
 
 import (
-	"context"
 	"errors"
-	"log/slog"
 	"os"
 	"strings"
-	"sync"
-
-	"github.com/yoannduc/go-project-template/pkg/logger"
-	"github.com/yoannduc/go-project-template/pkg/singleton"
 )
 
 var (
 	errInvalidEnv = errors.New("invalid environment value")
 )
 
+// An Env represents the environment level of the service.
 type Env int
 
+// Names for common environment levels.
 const (
 	EnvTest Env = -2
 	EnvDev  Env = -1
 	EnvProd Env = 0
 )
 
+// IsDev returns whether the env is dev/test mode.
+func (env Env) IsDev() bool { return env < EnvProd }
+
+// IsTest returns whether the env is test mode only.
+func (env Env) IsTest() bool { return env < EnvDev }
+
+// Strings for handled environment.
 const (
 	stringEnvTest        = "TEST"
 	stringEnvDev         = "DEV"
 	stringEnvDevelopment = "DEVELOPMENT"
 	stringEnvProd        = "PROD"
 	stringEnvProduction  = "PRODUCTION"
+	stringEnvUnsupported = "UNSUPPORTED"
 )
+
+// stringifyEnv returns the strign representation of env level.
+// It returns stringEnvUnsupported and an error if env did not
+// match any env handled.
+func stringifyEnv(env Env) (string, error) {
+	switch env {
+	case EnvTest:
+		return stringEnvTest, nil
+	case EnvDev:
+		return stringEnvDev, nil
+	case EnvProd:
+		return stringEnvProd, nil
+	default:
+		return stringEnvUnsupported, errInvalidEnv
+	}
+}
+
+// String returns the strign representation of env level.
+func (env Env) String() string {
+	s, _ := stringifyEnv(env)
+	return s
+}
 
 // parseEnv returns the env level based on env string.
 // It returns production level and an error if string did not
-// match any env handled. It is case-insensitive.
+// match any env handled or is empty. It is case-insensitive.
 func parseEnv(env string) (Env, error) {
 	switch strings.ToUpper(env) {
 	case stringEnvTest:
@@ -50,35 +76,13 @@ func parseEnv(env string) (Env, error) {
 
 const (
 	// varName is the env var name used to determine environment.
-	// It is a const for tests.
 	varName = "ENV"
 )
 
-var (
-	once  sync.Once
-	singl *singleton.Singleton[Env]
-)
-
-// Get returns the env level set by env variable [varName].
-// It uses singleton design pattern to read from env only once.
-// If no env value is set in env, it warns and defaults to production level.
+// Get returns the env level set by env variable defined in varName.
+// If no env value is set in env, it defaults to production level.
 func Get() Env {
-	if singl == nil {
-		once.Do(func() {
-			env := os.Getenv(varName)
-			v, err := parseEnv(env)
-			if err != nil {
-				logger.Get().LogAttrs(context.Background(), logger.LevelWarn, "defaulting to "+stringEnvProd, slog.String("env", env), slog.Any("err", err))
-			}
+	v, _ := parseEnv(os.Getenv(varName))
 
-			singl = &singleton.Singleton[Env]{Instance: v}
-		})
-	}
-
-	return singl.Instance
-}
-
-// IsDev returns whether the env is dev/test mode. It uses [Get].
-func IsDev() bool {
-	return Get() < EnvProd
+	return v
 }
