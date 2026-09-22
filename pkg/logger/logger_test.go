@@ -8,90 +8,42 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/yoannduc/go-project-template/pkg/env"
 )
 
 func TestHandlerOptionReplaceAttr(t *testing.T) {
-	t.Run("standard test case", func(t *testing.T) {
-		testCases := map[string]struct {
-			in  slog.Attr
-			out slog.Attr
-		}{
-			"empty, do nothing": {slog.Attr{}, slog.Attr{}},
-			"do nothing": {
-				slog.Attr{Key: "Key", Value: slog.StringValue("Value")},
-				slog.Attr{Key: "Key", Value: slog.StringValue("Value")},
-			},
-			"time key, remove it in test env": {
-				slog.Time(slog.TimeKey, time.Now()),
-				slog.Attr{},
-			},
-			"level key, replace by string level (info)": {
-				slog.Attr{Key: slog.LevelKey, Value: slog.AnyValue(LevelInfo)},
-				slog.Attr{Key: slog.LevelKey, Value: slog.StringValue(stringLevelInfo)},
-			},
-			"level key, replace by string level (error)": {
-				slog.Attr{Key: slog.LevelKey, Value: slog.AnyValue(LevelError)},
-				slog.Attr{Key: slog.LevelKey, Value: slog.StringValue(stringLevelError)},
-			},
-		}
+	now := time.Now()
 
-		tmp := envV
-		envV = env.EnvTest
-		t.Cleanup(func() {
-			envV = tmp
+	testCases := map[string]struct {
+		in  slog.Attr
+		out slog.Attr
+	}{
+		"empty, do nothing": {slog.Attr{}, slog.Attr{}},
+		"do nothing": {
+			slog.Attr{Key: "Key", Value: slog.StringValue("Value")},
+			slog.Attr{Key: "Key", Value: slog.StringValue("Value")},
+		},
+		"time key, no effect": {
+			slog.Time(slog.TimeKey, now),
+			slog.Time(slog.TimeKey, now),
+		},
+		"level key, replace by string level (info)": {
+			slog.Attr{Key: slog.LevelKey, Value: slog.AnyValue(LevelInfo)},
+			slog.Attr{Key: slog.LevelKey, Value: slog.StringValue(stringLevelInfo)},
+		},
+		"level key, replace by string level (error)": {
+			slog.Attr{Key: slog.LevelKey, Value: slog.AnyValue(LevelError)},
+			slog.Attr{Key: slog.LevelKey, Value: slog.StringValue(stringLevelError)},
+		},
+	}
+
+	for name, test := range testCases {
+		t.Run(name, func(t *testing.T) {
+			v := handlerOptionReplaceAttr([]string{}, test.in)
+			if !v.Equal(test.out) {
+				t.Fatalf(`wrong result for input "%v". Expected %v, got %v`, test.in, test.out, v)
+			}
 		})
-		for name, test := range testCases {
-			t.Run(name, func(t *testing.T) {
-				v := handlerOptionReplaceAttr([]string{}, test.in)
-				if !v.Equal(test.out) {
-					t.Fatalf(`wrong result for input "%v". Expected %v, got %v`, test.in, test.out, v)
-				}
-			})
-		}
-	})
-
-	t.Run("time key test", func(t *testing.T) {
-		now := time.Now()
-
-		testCases := map[string]struct {
-			in  slog.Attr
-			out slog.Attr
-			env env.Env
-		}{
-			"time key, remove it in test env": {
-				slog.Time(slog.TimeKey, now),
-				slog.Attr{},
-				env.EnvTest,
-			},
-			"time key, exists it in dev env": {
-				slog.Time(slog.TimeKey, now),
-				slog.Time(slog.TimeKey, now),
-				env.EnvDev,
-			},
-			"time key, exists it in prod env": {
-				slog.Time(slog.TimeKey, now),
-				slog.Time(slog.TimeKey, now),
-				env.EnvProd,
-			},
-		}
-
-		tmp := envV
-		t.Cleanup(func() {
-			envV = tmp
-		})
-
-		for name, test := range testCases {
-			t.Run(name, func(t *testing.T) {
-				envV = test.env
-				v := handlerOptionReplaceAttr([]string{}, test.in)
-				if !v.Equal(test.out) {
-					t.Fatalf(`wrong result for input "%v". Expected %v, got %v`, test.in, test.out, v)
-				}
-			})
-		}
-	})
+	}
 }
 
 func TestParseHandler(t *testing.T) {
