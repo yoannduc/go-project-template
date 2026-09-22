@@ -42,7 +42,7 @@ func (hdl exampleHandler) LoadRoutes(mux *http.ServeMux) {
 	mux.Handle(http.MethodGet+" "+routeGetAll, http.HandlerFunc(hdl.GetAllWithSearch))
 	mux.Handle(http.MethodGet+" "+routeGetByID, http.HandlerFunc(hdl.GetByID))
 	mux.Handle(http.MethodPost+" "+routeCreate, http.HandlerFunc(hdl.Create))
-	mux.Handle(http.MethodPatch+" "+routeUpdate, http.HandlerFunc(hdl.Update))
+	mux.Handle(http.MethodPut+" "+routeUpdate, http.HandlerFunc(hdl.Update))
 	mux.Handle(http.MethodDelete+" "+routeDelete, http.HandlerFunc(hdl.Delete))
 }
 
