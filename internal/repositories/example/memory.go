@@ -2,12 +2,17 @@ package example
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/yoannduc/go-project-template/internal/domain"
 	"github.com/yoannduc/go-project-template/internal/ports"
 	"github.com/yoannduc/go-project-template/pkg/memorydb"
+)
+
+var (
+	errIDLowerZero = errors.New("ID cannot be lower than zero")
 )
 
 func cmp(a, b domain.Example) bool {
@@ -44,6 +49,9 @@ func (repo memoryRepository) FindByLabelContaining(ctx context.Context, search s
 }
 
 func (repo memoryRepository) FindByID(ctx context.Context, id int) (domain.Example, error) {
+	if id < 0 {
+		return domain.Example{}, fmt.Errorf("memory repository: %w", errIDLowerZero)
+	}
 	v, err := repo.db.FindByID(ctx, uint64(id))
 	if err != nil {
 		return domain.Example{}, fmt.Errorf("memory repository: %w", err)
@@ -62,6 +70,9 @@ func (repo memoryRepository) Create(ctx context.Context, dom domain.Example) (do
 }
 
 func (repo memoryRepository) Update(ctx context.Context, id int, dom domain.Example) (domain.Example, error) {
+	if id < 0 {
+		return domain.Example{}, fmt.Errorf("memory repository: %w", errIDLowerZero)
+	}
 	v, err := repo.db.Update(ctx, uint64(id), dom, cmp)
 	if err != nil {
 		return domain.Example{}, fmt.Errorf("memory repository: %w", err)
@@ -71,6 +82,9 @@ func (repo memoryRepository) Update(ctx context.Context, id int, dom domain.Exam
 }
 
 func (repo memoryRepository) Delete(ctx context.Context, id int) (domain.Example, error) {
+	if id < 0 {
+		return domain.Example{}, fmt.Errorf("memory repository: %w", errIDLowerZero)
+	}
 	v, err := repo.db.Delete(ctx, uint64(id))
 	if err != nil {
 		return domain.Example{}, fmt.Errorf("memory repository: %w", err)

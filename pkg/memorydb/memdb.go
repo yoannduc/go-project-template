@@ -5,6 +5,7 @@ import (
 	"errors"
 	"iter"
 	"maps"
+	"math"
 	"reflect"
 	"slices"
 	"sync"
@@ -15,6 +16,7 @@ var (
 	errNotFound      = errors.New("not found")
 	errAlreadyExists = errors.New("entry already exists")
 	errNoIDField     = errors.New("object has no ID field, could not use in DB")
+	errIDTooLarge    = errors.New("ID too large for its type")
 )
 
 const (
@@ -32,6 +34,9 @@ func updateIDField[T any](in T, id uint64) (T, error) {
 	if !f.IsValid() ||
 		(f.Kind() != reflect.Int && f.Kind() != reflect.Int64 && f.Kind() != reflect.Int32) {
 		return in, errNoIDField
+	}
+	if id > math.MaxInt {
+		return in, errIDTooLarge
 	}
 	f.SetInt(int64(id))
 
@@ -80,7 +85,7 @@ func filterFunc[T any](it iter.Seq[T], f Filter[T]) iter.Seq[T] {
 //	}
 //
 // MemoryDB is very much not intended to be used in production,
-// it is intended to be used for MVPs or small personal projects.
+// it is intended to be used for POCs or small personal projects.
 type MemoryDB[T any] interface {
 	FindAll(context.Context) ([]T, error)
 	FindFilterFunc(context.Context, Filter[T]) ([]T, error)

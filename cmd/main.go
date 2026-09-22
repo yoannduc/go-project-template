@@ -48,7 +48,7 @@ func main() {
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Example microservice"))
+		_, _ = w.Write([]byte("Example microservice"))
 	})
 
 	examplehdl.New(
