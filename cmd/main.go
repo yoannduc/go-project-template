@@ -53,7 +53,7 @@ func main() {
 
 	examplehdl.New(
 		examplesrv.New(
-			examplerepo.NewMemoryRepository(memorydb.NewMemoryDB[domain.Example]()),
+			examplerepo.NewMemoryRepository(memorydb.New[domain.Example]()),
 			mapper.New[domain.Example, dtos.Example](),
 		),
 		loggr,
