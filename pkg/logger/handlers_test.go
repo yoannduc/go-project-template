@@ -82,9 +82,7 @@ func TestHandle(t *testing.T) {
 			hdl := slog.NewJSONHandler(os.Stderr, nil)
 			v := NewContextHandler(hdl)
 
-			err := v.Handle(ctx, test.in)
-			err2 := hdl.Handle(ctx, test.in)
-			if err != err2 {
+			if v.Handle(ctx, test.in) != hdl.Handle(ctx, test.in) {
 				t.Fatalf(`enabled did not match between parent handler & wrapper`)
 			}
 		})
