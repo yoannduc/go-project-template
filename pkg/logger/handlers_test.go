@@ -93,11 +93,12 @@ func TestWithAttrs(t *testing.T) {
 	testCases := map[string]struct {
 		in []slog.Attr
 	}{
-		"empty":  {[]slog.Attr{}},
-		"any":    {[]slog.Attr{slog.Any("toto", "toto")}},
-		"string": {[]slog.Attr{slog.String("toto", "toto")}},
-		"bool":   {[]slog.Attr{slog.Bool("toto", true)}},
-		"int":    {[]slog.Attr{slog.Int("toto", 123)}},
+		"empty":     {[]slog.Attr{}},
+		"any":       {[]slog.Attr{slog.Any("toto", "toto")}},
+		"string":    {[]slog.Attr{slog.String("toto", "toto")}},
+		"bool":      {[]slog.Attr{slog.Bool("toto", true)}},
+		"int":       {[]slog.Attr{slog.Int("toto", 123)}},
+		"level key": {[]slog.Attr{slog.Any(slog.LevelKey, LevelInfo)}},
 	}
 
 	for name, test := range testCases {
