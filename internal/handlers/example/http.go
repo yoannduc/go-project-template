@@ -57,7 +57,7 @@ func (hdl exampleHandler) GetAllWithSearch(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		hdl.loggr.LogAttrs(r.Context(), logger.LevelError, "", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, http.StatusText(http.StatusInternalServerError))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 
@@ -65,18 +65,18 @@ func (hdl exampleHandler) GetAllWithSearch(w http.ResponseWriter, r *http.Reques
 	if err = json.MarshalWrite(&buf, out); err != nil {
 		hdl.loggr.LogAttrs(r.Context(), logger.LevelError, "", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, http.StatusText(http.StatusInternalServerError))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 func (hdl exampleHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue(idPathValue))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, http.StatusText(http.StatusBadRequest))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
@@ -84,7 +84,7 @@ func (hdl exampleHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		hdl.loggr.LogAttrs(r.Context(), logger.LevelError, "", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, http.StatusText(http.StatusInternalServerError))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 
@@ -92,18 +92,18 @@ func (hdl exampleHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err = json.MarshalWrite(&buf, out); err != nil {
 		hdl.loggr.LogAttrs(r.Context(), logger.LevelError, "", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, http.StatusText(http.StatusInternalServerError))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 func (hdl exampleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var dto dtos.Example
 	if err := json.UnmarshalRead(r.Body, &dto); err != nil || dto.IsZero() {
 		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, http.StatusText(http.StatusBadRequest))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
@@ -111,7 +111,7 @@ func (hdl exampleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		hdl.loggr.LogAttrs(r.Context(), logger.LevelError, "", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, http.StatusText(http.StatusInternalServerError))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 
@@ -119,24 +119,24 @@ func (hdl exampleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err = json.MarshalWrite(&buf, out); err != nil {
 		hdl.loggr.LogAttrs(r.Context(), logger.LevelError, "", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, http.StatusText(http.StatusInternalServerError))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 func (hdl exampleHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var dto dtos.Example
 	if err := json.UnmarshalRead(r.Body, &dto); err != nil || dto.IsZero() {
 		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, http.StatusText(http.StatusBadRequest))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusBadRequest))
 		return
 	}
 	id, err := strconv.Atoi(r.PathValue(idPathValue))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, http.StatusText(http.StatusBadRequest))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
@@ -144,7 +144,7 @@ func (hdl exampleHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		hdl.loggr.LogAttrs(r.Context(), logger.LevelError, "", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, http.StatusText(http.StatusInternalServerError))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 
@@ -152,18 +152,18 @@ func (hdl exampleHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if err = json.MarshalWrite(&buf, out); err != nil {
 		hdl.loggr.LogAttrs(r.Context(), logger.LevelError, "", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, http.StatusText(http.StatusInternalServerError))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 func (hdl exampleHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue(idPathValue))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		io.WriteString(w, http.StatusText(http.StatusBadRequest))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusBadRequest))
 		return
 	}
 
@@ -171,7 +171,7 @@ func (hdl exampleHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		hdl.loggr.LogAttrs(r.Context(), logger.LevelError, "", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, http.StatusText(http.StatusInternalServerError))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 
@@ -179,9 +179,9 @@ func (hdl exampleHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err = json.MarshalWrite(&buf, out); err != nil {
 		hdl.loggr.LogAttrs(r.Context(), logger.LevelError, "", slog.Any("error", err))
 		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, http.StatusText(http.StatusInternalServerError))
+		_, _ = io.WriteString(w, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }

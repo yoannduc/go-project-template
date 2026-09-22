@@ -3,6 +3,7 @@ package memorydb
 import (
 	"context"
 	"errors"
+	"math"
 	"net"
 	"reflect"
 	"slices"
@@ -110,6 +111,34 @@ func TestUpdateIDField(t *testing.T) {
 				1,
 				1,
 				errNoIDField,
+			},
+		}
+
+		for name, test := range testCases {
+			t.Run(name, func(t *testing.T) {
+				v, err := updateIDField(test.el, test.id)
+				if !reflect.DeepEqual(v, test.out) {
+					t.Fatalf(`wrong type equality. Expected %v, got %v`, test.out, v)
+				}
+				if !errors.Is(err, test.err) {
+					t.Fatalf(`unexpected error. Expected "%v", got "%v"`, test.err, err)
+				}
+			})
+		}
+	})
+
+	t.Run("err overflows", func(t *testing.T) {
+		testCases := map[string]struct {
+			el  tone
+			id  uint64
+			out tone
+			err error
+		}{
+			"empty": {
+				tone{},
+				math.MaxUint64,
+				tone{},
+				errIDTooLarge,
 			},
 		}
 
@@ -379,9 +408,6 @@ func TestNew(t *testing.T) {
 }
 
 func TestFindAll(t *testing.T) {
-	tmp := "ptr string"
-	ptrValue := &tmp
-
 	testCases := map[string]struct {
 		out []tone
 	}{
@@ -402,7 +428,7 @@ func TestFindAll(t *testing.T) {
 				},
 				{
 					ID:  2,
-					Ptr: ptrValue,
+					Ptr: new(string),
 				},
 				{
 					ID:  3,
@@ -411,7 +437,7 @@ func TestFindAll(t *testing.T) {
 				{
 					ID:  4,
 					Str: "string",
-					Ptr: ptrValue,
+					Ptr: new(string),
 					Any: net.ParseIP("8.8.8.8"),
 				},
 			},
@@ -444,9 +470,6 @@ func TestFindFilterFunc(t *testing.T) {
 		out    []tone
 	}
 
-	tmp := "ptr string"
-	ptrValue := &tmp
-
 	testCases := map[string]struct {
 		toCreate []tone
 		find     []findFilterFunc
@@ -476,7 +499,7 @@ func TestFindFilterFunc(t *testing.T) {
 				},
 				{
 					Str: "two",
-					Ptr: ptrValue,
+					Ptr: new(string),
 				},
 				{
 					Str: "three",
@@ -484,7 +507,7 @@ func TestFindFilterFunc(t *testing.T) {
 				},
 				{
 					Str: "four",
-					Ptr: ptrValue,
+					Ptr: new(string),
 					Any: net.ParseIP("8.8.8.8"),
 				},
 			},
@@ -501,7 +524,7 @@ func TestFindFilterFunc(t *testing.T) {
 						{
 							ID:  2,
 							Str: "two",
-							Ptr: ptrValue,
+							Ptr: new(string),
 						},
 						{
 							ID:  3,
@@ -511,7 +534,7 @@ func TestFindFilterFunc(t *testing.T) {
 						{
 							ID:  4,
 							Str: "four",
-							Ptr: ptrValue,
+							Ptr: new(string),
 							Any: net.ParseIP("8.8.8.8"),
 						},
 					},
@@ -524,7 +547,7 @@ func TestFindFilterFunc(t *testing.T) {
 						{
 							ID:  2,
 							Str: "two",
-							Ptr: ptrValue,
+							Ptr: new(string),
 						},
 						{
 							ID:  3,
@@ -535,18 +558,18 @@ func TestFindFilterFunc(t *testing.T) {
 				},
 				{
 					func(tone tone) bool {
-						return tone.Ptr == ptrValue
+						return reflect.DeepEqual(tone.Ptr, new(string))
 					},
 					[]tone{
 						{
 							ID:  2,
 							Str: "two",
-							Ptr: ptrValue,
+							Ptr: new(string),
 						},
 						{
 							ID:  4,
 							Str: "four",
-							Ptr: ptrValue,
+							Ptr: new(string),
 							Any: net.ParseIP("8.8.8.8"),
 						},
 					},
@@ -582,9 +605,6 @@ func TestFindByID(t *testing.T) {
 		err error
 	}
 
-	tmp := "ptr string"
-	ptrValue := &tmp
-
 	testCases := map[string]struct {
 		toCreate []tone
 		find     []find
@@ -607,7 +627,7 @@ func TestFindByID(t *testing.T) {
 				},
 				{
 					Str: "two",
-					Ptr: ptrValue,
+					Ptr: new(string),
 				},
 				{
 					Str: "three",
@@ -615,7 +635,7 @@ func TestFindByID(t *testing.T) {
 				},
 				{
 					Str: "four",
-					Ptr: ptrValue,
+					Ptr: new(string),
 					Any: net.ParseIP("8.8.8.8"),
 				},
 			},
@@ -633,7 +653,7 @@ func TestFindByID(t *testing.T) {
 					tone{
 						ID:  4,
 						Str: "four",
-						Ptr: ptrValue,
+						Ptr: new(string),
 						Any: net.ParseIP("8.8.8.8"),
 					},
 					nil,
@@ -643,7 +663,7 @@ func TestFindByID(t *testing.T) {
 					tone{
 						ID:  2,
 						Str: "two",
-						Ptr: ptrValue,
+						Ptr: new(string),
 					},
 					nil,
 				},
@@ -689,9 +709,6 @@ func TestCreate(t *testing.T) {
 		err error
 	}
 
-	tmp := "ptr string"
-	ptrValue := &tmp
-
 	t.Run("no errors, many types", func(t *testing.T) {
 		testCases := []inout[tone]{
 			{
@@ -706,11 +723,11 @@ func TestCreate(t *testing.T) {
 			},
 			{
 				tone{
-					Ptr: ptrValue,
+					Ptr: new(string),
 				},
 				tone{
 					ID:  2,
-					Ptr: ptrValue,
+					Ptr: new(string),
 				},
 				nil,
 			},
@@ -727,13 +744,13 @@ func TestCreate(t *testing.T) {
 			{
 				tone{
 					Str: "string",
-					Ptr: ptrValue,
+					Ptr: new(string),
 					Any: net.ParseIP("8.8.8.8"),
 				},
 				tone{
 					ID:  4,
 					Str: "string",
-					Ptr: ptrValue,
+					Ptr: new(string),
 					Any: net.ParseIP("8.8.8.8"),
 				},
 				nil,
@@ -828,20 +845,20 @@ func TestCreate(t *testing.T) {
 			},
 			{
 				tone{
-					Ptr: ptrValue,
+					Ptr: new(string),
 				},
 				tone{
 					ID:  2,
-					Ptr: ptrValue,
+					Ptr: new(string),
 				},
 				nil,
 			},
 			{
 				tone{
-					Ptr: ptrValue,
+					Ptr: new(string),
 				},
 				tone{
-					Ptr: ptrValue,
+					Ptr: new(string),
 				},
 				errAlreadyExists,
 			},
@@ -857,12 +874,12 @@ func TestCreate(t *testing.T) {
 			{
 				tone{
 					Str: "string",
-					Ptr: ptrValue,
+					Ptr: new(string),
 					Any: net.ParseIP("8.8.8.8"),
 				},
 				tone{
 					Str: "string",
-					Ptr: ptrValue,
+					Ptr: new(string),
 					Any: net.ParseIP("8.8.8.8"),
 				},
 				errAlreadyExists,
@@ -915,9 +932,6 @@ func TestUpdate(t *testing.T) {
 			out tone
 			err error
 		}
-
-		tmp := "ptr string"
-		ptrValue := &tmp
 
 		testCases := map[string]struct {
 			toCreate []tone
@@ -999,7 +1013,7 @@ func TestUpdate(t *testing.T) {
 					},
 					{
 						Str: "two",
-						Ptr: ptrValue,
+						Ptr: new(string),
 					},
 					{
 						Str: "three",
@@ -1007,7 +1021,7 @@ func TestUpdate(t *testing.T) {
 					},
 					{
 						Str: "four",
-						Ptr: ptrValue,
+						Ptr: new(string),
 						Any: net.ParseIP("8.8.8.8"),
 					},
 				},
@@ -1143,9 +1157,6 @@ func TestDelete(t *testing.T) {
 		err error
 	}
 
-	tmp := "ptr string"
-	ptrValue := &tmp
-
 	testCases := map[string]struct {
 		toCreate []tone
 		delete   []delete
@@ -1188,14 +1199,14 @@ func TestDelete(t *testing.T) {
 					Str: "string",
 				},
 				{
-					Ptr: ptrValue,
+					Ptr: new(string),
 				},
 				{
 					Any: net.ParseIP("8.8.8.8"),
 				},
 				{
 					Str: "string",
-					Ptr: ptrValue,
+					Ptr: new(string),
 					Any: net.ParseIP("8.8.8.8"),
 				},
 			},
@@ -1221,7 +1232,7 @@ func TestDelete(t *testing.T) {
 					tone{
 						ID:  4,
 						Str: "string",
-						Ptr: ptrValue,
+						Ptr: new(string),
 						Any: net.ParseIP("8.8.8.8"),
 					},
 					nil,
@@ -1230,7 +1241,7 @@ func TestDelete(t *testing.T) {
 					2,
 					tone{
 						ID:  2,
-						Ptr: ptrValue,
+						Ptr: new(string),
 					},
 					nil,
 				},
