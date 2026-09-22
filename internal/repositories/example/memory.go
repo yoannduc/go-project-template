@@ -10,6 +10,14 @@ import (
 	"github.com/yoannduc/go-project-template/pkg/memorydb"
 )
 
+func cmp(a, b domain.Example) bool {
+	if a.ID == b.ID {
+		return false
+	}
+
+	return strings.EqualFold(a.Label, b.Label)
+}
+
 type memoryRepository struct {
 	db memorydb.MemoryDB[domain.Example]
 }
@@ -21,12 +29,7 @@ func NewMemoryRepository(db memorydb.MemoryDB[domain.Example]) ports.ExampleRepo
 }
 
 func (repo memoryRepository) FindAll(ctx context.Context) ([]domain.Example, error) {
-	v, err := repo.db.FindAll(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("memory repository: %w", err)
-	}
-
-	return v, nil
+	return repo.db.FindAll(ctx)
 }
 
 func (repo memoryRepository) FindByLabelContaining(ctx context.Context, search string) ([]domain.Example, error) {
@@ -41,7 +44,7 @@ func (repo memoryRepository) FindByLabelContaining(ctx context.Context, search s
 }
 
 func (repo memoryRepository) FindByID(ctx context.Context, id int) (domain.Example, error) {
-	v, err := repo.db.FindByID(ctx, id)
+	v, err := repo.db.FindByID(ctx, uint64(id))
 	if err != nil {
 		return domain.Example{}, fmt.Errorf("memory repository: %w", err)
 	}
@@ -50,9 +53,7 @@ func (repo memoryRepository) FindByID(ctx context.Context, id int) (domain.Examp
 }
 
 func (repo memoryRepository) Create(ctx context.Context, dom domain.Example) (domain.Example, error) {
-	v, err := repo.db.Create(ctx, dom, func(a, b domain.Example) int {
-		return strings.Compare(a.Label, b.Label)
-	})
+	v, err := repo.db.Create(ctx, dom, cmp)
 	if err != nil {
 		return domain.Example{}, fmt.Errorf("memory repository: %w", err)
 	}
@@ -61,9 +62,7 @@ func (repo memoryRepository) Create(ctx context.Context, dom domain.Example) (do
 }
 
 func (repo memoryRepository) Update(ctx context.Context, id int, dom domain.Example) (domain.Example, error) {
-	v, err := repo.db.Update(ctx, id, dom, func(a, b domain.Example) int {
-		return strings.Compare(a.Label, b.Label)
-	})
+	v, err := repo.db.Update(ctx, uint64(id), dom, cmp)
 	if err != nil {
 		return domain.Example{}, fmt.Errorf("memory repository: %w", err)
 	}
@@ -72,7 +71,7 @@ func (repo memoryRepository) Update(ctx context.Context, id int, dom domain.Exam
 }
 
 func (repo memoryRepository) Delete(ctx context.Context, id int) (domain.Example, error) {
-	v, err := repo.db.Delete(ctx, id)
+	v, err := repo.db.Delete(ctx, uint64(id))
 	if err != nil {
 		return domain.Example{}, fmt.Errorf("memory repository: %w", err)
 	}

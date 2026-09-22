@@ -30,6 +30,8 @@ var (
 )
 
 func main() {
+	loggr := logger.Get()
+
 	mux := http.NewServeMux()
 
 	var h http.Handler = mux
@@ -37,9 +39,9 @@ func main() {
 	h = httpmw.LoadUserIP(h)
 	h = httpmw.LoadTraceID(h)
 	h = httpmw.Timeout(1 * time.Second)(h)
-	h = httpmw.LogResponse(h)
+	h = httpmw.LogResponse(loggr)(h)
 	// Add cors only on dev env
-	if env.IsDev() {
+	if env.Get().IsDev() {
 		h = httpmw.DevCORS(h)
 	}
 
@@ -51,9 +53,10 @@ func main() {
 
 	examplehdl.New(
 		examplesrv.New(
-			examplerepo.NewMemoryRepository(memorydb.NewMemoryDB[domain.Example]()),
+			examplerepo.NewMemoryRepository(memorydb.New[domain.Example]()),
 			mapper.New[domain.Example, dtos.Example](),
 		),
+		loggr,
 	).LoadRoutes(mux)
 
 	// Override default httpAddr if env var is present
@@ -81,12 +84,12 @@ func main() {
 	// https://github.com/gin-gonic/examples/blob/master/graceful-shutdown/graceful-shutdown/notify-with-context/server.go
 	go func() {
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Get().LogAttrs(context.Background(), logger.LevelFatal, "Server start error", slog.Any("error", err))
+			loggr.LogAttrs(context.Background(), logger.LevelFatal, "Server start error", slog.Any("error", err))
 			os.Exit(1)
 		}
 	}()
 
-	logger.Get().Info("Server started on address " + httpAddr)
+	loggr.Info("Server started on address " + httpAddr)
 
 	// Create context that listens for the interrupt signal from the OS.
 	// kill (no param) default send syscanll.SIGTERM
@@ -101,16 +104,16 @@ func main() {
 	// Restore default behavior on the interrupt signal and notify user of
 	// shutdown.
 	stop()
-	logger.Get().Info("Shutting down gracefully, press Ctrl+C again to force")
+	loggr.Info("Shutting down gracefully, press Ctrl+C again to force")
 
 	// The context is used to inform the server it has 5 seconds to finish
 	// the request it is currently handling
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := s.Shutdown(ctx); err != nil {
-		logger.Get().LogAttrs(context.Background(), logger.LevelFatal, "Server forced to shutdown", slog.Any("error", err))
+		loggr.LogAttrs(context.Background(), logger.LevelFatal, "Server forced to shutdown", slog.Any("error", err))
 		os.Exit(1)
 	}
 
-	logger.Get().Info("Server exiting")
+	loggr.Info("Server exiting")
 }

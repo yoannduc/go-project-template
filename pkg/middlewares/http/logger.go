@@ -33,22 +33,26 @@ func (rec *httpResponseWriterMetadataRecorder) Write(b []byte) (int, error) {
 	return n, err
 }
 
-// LogResponse is a middleware that calls next.ServeHTTP() to let handler work
-// and uses logger.Logger after the handler returns to log infos on the request.
-func LogResponse(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
+// LogResponse is a function that takes in a *slog.Logger to have it
+// preloaded and not regenerated each middleware call and returns
+// a middleware that calls next.ServeHTTP() to let handler work and uses
+// inputed logger after the handler returns to log infos on the request.
+func LogResponse(log *slog.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
 
-		rec := httpResponseWriterMetadataRecorder{w, http.StatusOK, 0}
-		next.ServeHTTP(&rec, r)
+			rec := httpResponseWriterMetadataRecorder{w, http.StatusOK, 0}
+			next.ServeHTTP(&rec, r)
 
-		logger.Get().LogAttrs(r.Context(), logger.LevelInfo, "request",
-			slog.String("handler", "http"),
-			slog.String("latency", time.Since(start).String()),
-			slog.Int("statusCode", rec.statusCode),
-			slog.String("method", r.Method),
-			slog.String("path", r.URL.Path),
-			slog.Int("bodySize", rec.bodySize),
-		)
-	})
+			log.LogAttrs(r.Context(), logger.LevelInfo, "request",
+				slog.String("handler", "http"),
+				slog.String("latency", time.Since(start).String()),
+				slog.Int("statusCode", rec.statusCode),
+				slog.String("method", r.Method),
+				slog.String("path", r.URL.Path),
+				slog.Int("bodySize", rec.bodySize),
+			)
+		})
+	}
 }

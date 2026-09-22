@@ -18,7 +18,6 @@ func TestFromRequest(t *testing.T) {
 	}
 
 	for _, test := range tc {
-		test := test
 		t.Run(test.traceid, func(t *testing.T) {
 			req, _ := http.NewRequest("GET", "", nil)
 			req.Header.Add(headerName, test.traceid)
@@ -47,7 +46,6 @@ func TestAddHeader(t *testing.T) {
 	}
 
 	for _, test := range tc {
-		test := test
 		t.Run(test.traceid, func(t *testing.T) {
 			req, _ := http.NewRequest("GET", "", nil)
 
