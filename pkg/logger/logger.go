@@ -15,8 +15,7 @@ const (
 )
 
 // handlerOptionReplaceAttr is the function which transforms certain
-// log attributes format or value. It removes time entirely for
-// test consistency purposes and replace level key value from int
+// log attributes format or value. It replaces level key value from int
 // level representation to its string representation.
 func handlerOptionReplaceAttr(groups []string, a slog.Attr) slog.Attr {
 	if a.Key == slog.LevelKey {
