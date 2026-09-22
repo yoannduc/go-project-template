@@ -5,8 +5,6 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-
-	"github.com/yoannduc/go-project-template/pkg/env"
 )
 
 const (
@@ -16,23 +14,11 @@ const (
 	handlerTypeEnvVar = "LOG_HANDLER"
 )
 
-var (
-	// envV is a global var to be loaded only once because
-	// its value is needed for EACH attr of EACH log line.
-	// It would amount to too many calls otherwise.
-	envV = env.Get()
-)
-
 // handlerOptionReplaceAttr is the function which transforms certain
 // log attributes format or value. It removes time entirely for
 // test consistency purposes and replace level key value from int
 // level representation to its string representation.
 func handlerOptionReplaceAttr(groups []string, a slog.Attr) slog.Attr {
-	// Remove time from the output for predictable test output.
-	if envV.IsTest() && a.Key == slog.TimeKey {
-		return slog.Attr{}
-	}
-
 	if a.Key == slog.LevelKey {
 		// Handle custom level values.
 		level := a.Value.Any().(slog.Level)
