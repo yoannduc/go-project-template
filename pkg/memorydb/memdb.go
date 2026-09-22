@@ -34,12 +34,14 @@ func updateIDField[T any](in T, id int) (T, error) {
 	return in, nil
 }
 
+type Cmp[T any] func(T, T) int
+
 type MemoryDB[T any] interface {
 	FindAll(context.Context) ([]T, error)
 	FindFilterFunc(context.Context, func(T) bool) ([]T, error)
 	FindByID(context.Context, int) (T, error)
-	Create(context.Context, T, func(T, T) int) (T, error)
-	Update(context.Context, int, T, func(T, T) int) (T, error)
+	Create(context.Context, T, Cmp[T]) (T, error)
+	Update(context.Context, int, T, Cmp[T]) (T, error)
 	Delete(context.Context, int) (T, error)
 }
 
@@ -82,7 +84,7 @@ func (db *memDB[T]) FindByID(_ context.Context, id int) (T, error) {
 	return v, errNotFound
 }
 
-func (db *memDB[T]) Create(_ context.Context, in T, cmp func(T, T) int) (T, error) {
+func (db *memDB[T]) Create(_ context.Context, in T, cmp Cmp[T]) (T, error) {
 	if _, ok := slices.BinarySearchFunc(
 		slices.SortedFunc(maps.Values(db.m), cmp),
 		in,
@@ -101,7 +103,7 @@ func (db *memDB[T]) Create(_ context.Context, in T, cmp func(T, T) int) (T, erro
 	return out, nil
 }
 
-func (db *memDB[T]) Update(_ context.Context, id int, in T, cmp func(T, T) int) (T, error) {
+func (db *memDB[T]) Update(_ context.Context, id int, in T, cmp Cmp[T]) (T, error) {
 	if _, ok := slices.BinarySearchFunc(
 		slices.SortedFunc(maps.Values(db.m), cmp),
 		in,

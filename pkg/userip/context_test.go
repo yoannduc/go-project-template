@@ -34,7 +34,7 @@ func TestNewContext(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(test.userip, userip) {
-				t.Fatalf("session from ctx was not equal to test input. Expected %v, got %v", test.userip.String(), userip.String())
+				t.Fatalf("value from ctx was not equal to test input. Expected %v, got %v", test.userip.String(), userip.String())
 			}
 		})
 	}
@@ -63,7 +63,7 @@ func TestFromContext(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(test.userip, userip) {
-				t.Fatalf("session from ctx was not equal to test input. Expected %v, got %v", test.userip.String(), userip.String())
+				t.Fatalf("value from ctx was not equal to test input. Expected %v, got %v", test.userip.String(), userip.String())
 			}
 		})
 	}

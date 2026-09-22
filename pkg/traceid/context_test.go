@@ -18,7 +18,6 @@ func TestNewContext(t *testing.T) {
 	}
 
 	for _, test := range tc {
-		test := test
 		t.Run(test.traceid, func(t *testing.T) {
 			ctx := NewContext(context.Background(), test.traceid)
 
@@ -50,7 +49,6 @@ func TestFromContext(t *testing.T) {
 	}
 
 	for _, test := range tc {
-		test := test
 		t.Run(test.traceid, func(t *testing.T) {
 			ctx := context.WithValue(context.Background(), traceIDKey, test.traceid)
 
