@@ -33,8 +33,10 @@ func (rec *httpResponseWriterMetadataRecorder) Write(b []byte) (int, error) {
 	return n, err
 }
 
-// LogResponse is a middleware that calls next.ServeHTTP() to let handler work
-// and uses logger.Logger after the handler returns to log infos on the request.
+// LogResponse is a function that takes in a *slog.Logger to have it
+// preloaded and not regenerated each middleware call and returns
+// a middleware that calls next.ServeHTTP() to let handler work and uses
+// inputed logger after the handler returns to log infos on the request.
 func LogResponse(log *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
