@@ -40,15 +40,16 @@ func main() {
 	h = httpmw.LoadTraceID(h)
 	h = httpmw.Timeout(1 * time.Second)(h)
 	h = httpmw.LogResponse(loggr)(h)
-	// Add cors only on dev env
+	// Add * cors only on dev env.
 	if env.Get().IsDev() {
 		h = httpmw.DevCORS(h)
 	}
 
+	// Health route.
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("Example microservice"))
+		_, _ = w.Write([]byte(http.StatusText(http.StatusOK)))
 	})
 
 	examplehdl.New(
@@ -59,18 +60,18 @@ func main() {
 		loggr,
 	).LoadRoutes(mux)
 
-	// Override default httpAddr if env var is present
+	// Override default httpAddr if env var is present.
 	if a := os.Getenv(httpAddrEnvVar); a != "" {
 		httpAddr = a
 	}
 
-	// Explicitly create http server & set timeout
+	// Explicitly create http server & set timeout.
 	// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 	// https://adam-p.ca/blog/2022/01/golang-http-server-timeouts/
 	s := &http.Server{
 		Addr:    httpAddr,
 		Handler: h,
-		// ReadTimeout is set to 60s to allow files import
+		// ReadTimeout is set to 60s to allow files import.
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 60 * time.Second,
 		// IdleTimeout is the maximum amount of time to wait for the next
@@ -80,7 +81,7 @@ func main() {
 	}
 
 	// Initializing the server in a goroutine so that
-	// it won't block the graceful shutdown handling below
+	// it won't block the graceful shutdown handling below.
 	// https://github.com/gin-gonic/examples/blob/master/graceful-shutdown/graceful-shutdown/notify-with-context/server.go
 	go func() {
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -107,7 +108,7 @@ func main() {
 	loggr.Info("Shutting down gracefully, press Ctrl+C again to force")
 
 	// The context is used to inform the server it has 5 seconds to finish
-	// the request it is currently handling
+	// the request it is currently handling.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := s.Shutdown(ctx); err != nil {

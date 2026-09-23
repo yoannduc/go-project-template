@@ -6,6 +6,8 @@ import (
 	"github.com/yoannduc/go-project-template/internal/domain"
 )
 
+// ExampleRepository is the api contract for the repository that
+// handles Examples.
 type ExampleRepository interface {
 	FindAll(context.Context) ([]domain.Example, error)
 	FindByLabelContaining(context.Context, string) ([]domain.Example, error)
